@@ -36,6 +36,8 @@ public:
     std::vector<Route> getEndpoints() const { return _getEndpoints; }
     std::vector<Route> postEndpoints() const { return _postEndpoints; }
 
+    String basePath() const { return _basePath;  }
+
 private:
     String _basePath;
     std::vector<Route> _getEndpoints;

@@ -1,26 +1,16 @@
 #include "ServerManager.h"
-#include <typeinfo>
 
 ServerManager::ServerManager(uint16_t port) : _server(port) {}
 
 void ServerManager::use(Middleware* mw) {
     _middlewares.push_back(mw);
-    // Log middleware class name
-    Serial.print("🟢 Middleware added: ");
-    Serial.println(typeid(*mw).name());
+    Serial.println("🟢 Middleware added");
 }
 
 void ServerManager::addRouter(Router* router) {
     _routers.push_back(router);
-
-    // Log router class name and base path if exists
-    Serial.print("📦 Router mounted: ");
-    Serial.print(typeid(*router).name());
-    if (router->basePath() != "") {
-        Serial.print(" | Base path: ");
-        Serial.print(router->basePath());
-    }
-    Serial.println();
+    Serial.print("📦 Router mounted with base path: ");
+    Serial.println(router->basePath());
 
     // Log all GET endpoints
     for (auto route : router->getEndpoints()) {

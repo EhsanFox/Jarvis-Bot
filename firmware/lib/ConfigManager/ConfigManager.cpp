@@ -1,84 +1,68 @@
 #include "ConfigManager.h"
 
-ConfigManager::ConfigManager(const char* filePath)
-    : _filePath(filePath)
-{
-}
-
-bool ConfigManager::begin() {
+ConfigManager::ConfigManager(const char* filePath) : _filePath(filePath), _doc(1024) {
     if (!LittleFS.begin(true)) {
         Serial.println("❌ Failed to mount LittleFS");
-        return false;
     }
-
-    // Try to load config, if fails, create default
-    if (!loadConfig()) {
-        Serial.println("⚠️ No config found, creating default.");
-        _wifiConfig = {"", ""};
-        saveConfig();
-    }
-
-    return true;
+    load();
 }
 
-bool ConfigManager::loadConfig() {
+// Load JSON file into _doc
+bool ConfigManager::load() {
     if (!LittleFS.exists(_filePath)) {
-        Serial.println("⚠️ Config file does not exist.");
-        return false;
+        Serial.println("⚠️ Config file does not exist, creating new...");
+        _doc.clear();
+        save();
+        return true;
     }
 
     File file = LittleFS.open(_filePath, "r");
     if (!file) {
-        Serial.println("❌ Failed to open config file.");
+        Serial.println("❌ Failed to open config file for reading");
         return false;
     }
 
-    DynamicJsonDocument doc(512);
-    DeserializationError error = deserializeJson(doc, file);
+    DeserializationError err = deserializeJson(_doc, file);
     file.close();
 
-    if (error) {
+    if (err) {
         Serial.print("❌ Failed to parse config.json: ");
-        Serial.println(error.c_str());
+        Serial.println(err.c_str());
+        _doc.clear();
         return false;
     }
-
-    _wifiConfig.ssid = doc["ssid"] | "";
-    _wifiConfig.password = doc["password"] | "";
-
-    Serial.println("✅ Config loaded successfully.");
-    Serial.print("SSID: "); Serial.println(_wifiConfig.ssid);
 
     return true;
 }
 
-bool ConfigManager::saveConfig() {
+// Save _doc to file
+bool ConfigManager::save() {
     File file = LittleFS.open(_filePath, "w");
     if (!file) {
-        Serial.println("❌ Failed to open config file for writing.");
+        Serial.println("❌ Failed to open config file for writing");
         return false;
     }
 
-    DynamicJsonDocument doc(512);
-    doc["ssid"] = _wifiConfig.ssid;
-    doc["password"] = _wifiConfig.password;
-
-    if (serializeJson(doc, file) == 0) {
-        Serial.println("❌ Failed to write config to file.");
+    if (serializeJson(_doc, file) == 0) {
+        Serial.println("❌ Failed to write JSON to file");
         file.close();
         return false;
     }
 
     file.close();
-    Serial.println("✅ Config saved successfully.");
     return true;
 }
 
-WiFiConfig ConfigManager::getWiFiConfig() const {
-    return _wifiConfig;
+// Public get: returns JsonVariant, can be string, object, number, etc.
+JsonVariant ConfigManager::get(const String& key) {
+    if (!_doc.containsKey(key)) {
+        return JsonVariant(); // null
+    }
+    return _doc[key];
 }
 
-void ConfigManager::setWiFiConfig(const String& ssid, const String& password) {
-    _wifiConfig.ssid = ssid;
-    _wifiConfig.password = password;
+// Public set: assign value to key, value can be primitive or JSON object
+bool ConfigManager::set(const String& key, const JsonVariant& value) {
+    _doc[key] = value;
+    return save();
 }

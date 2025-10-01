@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "ConfigManager.h"
-#include "WiFiManager.h"
-#include "ServerManager.h"
+#include <ConfigManager.h>
+#include <WiFiManager.h>
+#include <ServerManager.h>
 
 #include "server/routes/api.h" 
 #include "server/middlewares/logger.h"
@@ -15,29 +15,33 @@ void setup() {
     delay(1000);
     Serial.println("Booting...");
 
-    // Load config
-    config.begin();
-
     // Setup Wi-Fi manager
-    wifiManager = new WiFiManager(config);
+    wifiManager = new WiFiManager( config.get("wifi")["ssid"] | "",
+                                   config.get("wifi")["password"] | "",
+                                   config.get("ap")["name"] | "AI-Bot",
+                                   config.get("ap")["password"] | "" );
     wifiManager->begin();
 
     // Setup webserver
-    webServer = new ServerManager(80); // default port 80
-    webServer->addRouter(&infoRouter); // router imported from api.h
+    webServer = new ServerManager(
+        config.get("server")["port"] | 80
+    );
 
-     webServer->use(new LoggerMiddleware());
+    // TODO: Add Routers
+    webServer->addRouter(&infoRouter);
 
-    // AP started callback
+    // TODO: Add Middlewares
+    webServer->use(new LoggerMiddleware());
+
     wifiManager->setAPStartedCallback([&]() {
         Serial.println("Starting webserver in AP mode...");
         webServer->begin();
     });
 
     // Try connecting to Wi-Fi from config
-    if (!wifiManager->connectFromConfig(10000)) {
+    if (!wifiManager->connectSTA(10000)) {
         Serial.println("WiFi connect failed, starting AP...");
-        wifiManager->startAP("AI-Bot-Setup", "");
+        wifiManager->startAP();
     } else {
         Serial.print("Connected to Wi-Fi. IP: ");
         Serial.println(wifiManager->ipAddress());

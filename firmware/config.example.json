@@ -1,6 +1,13 @@
 {
-  "ssid": "YourWiFiName",
-  "password": "YourWiFiPassword",
-  "apname": "AI-Bot",
-  "appassword": null
+  "wifi": {
+    "ssid": "YourWiFiName",
+    "password": "YourWiFiPassword"
+  },
+  "ap": {
+    "ssid": "AI-Bot",
+    "password": null
+  },
+  "server": {
+    "port": 80
+  }
 }

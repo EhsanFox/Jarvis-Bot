@@ -1,34 +1,20 @@
 #pragma once
-
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <LittleFS.h>
-
-struct WiFiConfig {
-    String ssid;
-    String password;
-};
+#include <ArduinoJson.h>
 
 class ConfigManager {
 public:
     ConfigManager(const char* filePath = "/config.json");
 
-    // Initialize filesystem and load config
-    bool begin();
-
-    // Load config from LittleFS
-    bool loadConfig();
-
-    // Save current config to LittleFS
-    bool saveConfig();
-
-    // Getters
-    WiFiConfig getWiFiConfig() const;
-
-    // Setters
-    void setWiFiConfig(const String& ssid, const String& password);
+    // Public API
+    JsonVariant get(const String& key);             // get value for a key
+    bool set(const String& key, const JsonVariant& value);  // set value for a key
 
 private:
     const char* _filePath;
-    WiFiConfig _wifiConfig;
+    DynamicJsonDocument _doc;
+
+    bool load();   // load JSON from file
+    bool save();   // save JSON to file
 };
