@@ -1,0 +1,39 @@
+# === PlatformIO / ESP32 ===
+.pio/
+.vscode/
+.clangd/
+*.elf
+*.bin
+*.map
+*.pyc
+
+# === Config files ===
+*.env
+.env.*
+!.env.example
+firmware/config.json   # never commit real WiFi creds
+
+# === Node.js / React ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+dist/
+out/
+
+# Ignore build cache, but KEEP final build for ESP32
+# Uncomment the next line if you don’t want to store built frontend
+# frontend/build/
+
+# === OS / Editor ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === Logs & temp ===
+*.log
+*.bak
+*.tmp
+*.old
