@@ -2,11 +2,14 @@
 #include <ConfigManager.h>
 #include <WiFiManager.h>
 #include <ServerManager.h>
+#include <TerminalManager.h>
 
 #include "server/routes/api.h" 
 #include "server/middlewares/logger.h"
+#include "commands/info.h"
 
 ConfigManager config;
+TerminalManager terminal;
 WiFiManager *wifiManager = nullptr;
 ServerManager *webServer = nullptr;
 
@@ -14,6 +17,9 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     Serial.println("Booting...");
+
+    // Setup Terminal Commands
+    terminal.addCommand(infoCommand);
 
     // Setup Wi-Fi manager
     wifiManager = new WiFiManager( config.get("wifi")["ssid"] | "",
@@ -50,11 +56,5 @@ void setup() {
 }
 
 void loop() {
-    static unsigned long last = 0;
-    if (millis() - last > 3000) {
-        last = millis();
-        Serial.print("WiFi connected: ");
-        Serial.println(wifiManager->isConnected() ? "YES" : "NO");
-        Serial.print("IP: "); Serial.println(wifiManager->ipAddress());
-    }
+    terminal.handleInput();
 }

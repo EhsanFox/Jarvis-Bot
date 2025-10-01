@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include "../../include/Router.h"      // include from include/
 #include "../../include/Middleware.h"  // include from include/

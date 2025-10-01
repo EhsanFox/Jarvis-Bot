@@ -17,19 +17,19 @@ public:
     }
 
     // Add GET endpoint
-    void get(const String& endpoint, std::function<void(AsyncWebServerRequest*)> handler) {
+    void get(const String& endpoint, std::function<String(AsyncWebServerRequest*)> handler) {
         _getEndpoints.push_back({_basePath + endpoint, handler});
     }
 
     // Add POST endpoint
-    void post(const String& endpoint, std::function<void(AsyncWebServerRequest*)> handler) {
+    void post(const String& endpoint, std::function<String(AsyncWebServerRequest*)> handler) {
         _postEndpoints.push_back({_basePath + endpoint, handler});
     }
 
     // Route structure
     struct Route {
         String path;
-        std::function<void(AsyncWebServerRequest*)> handler;
+        std::function<String(AsyncWebServerRequest*)> handler;
     };
 
     // Accessors
