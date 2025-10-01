@@ -38,3 +38,4 @@ Thumbs.db
 *.tmp
 *.old
 firmware/config.json
+firmware/data/config.json
