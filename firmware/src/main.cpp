@@ -1,44 +1,51 @@
 #include <Arduino.h>
 #include "ConfigManager.h"
 #include "WiFiManager.h"
-// #include "WebServerManager.h" // your future webserver module
+#include "ServerManager.h"
+
+#include "server/routes/api.h" 
+#include "server/middlewares/logger.h"
 
 ConfigManager config;
-WiFiManager *wifiManager = nullptr; // pointer so we can set callback after creating webserver
-// WebServerManager webServer(config); // example
+WiFiManager *wifiManager = nullptr;
+ServerManager *webServer = nullptr;
 
 void setup() {
-    // Disable brownout detector (temporary debug only)
-    // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     Serial.begin(115200);
     delay(1000);
     Serial.println("Booting...");
 
-    config.begin(); // mount LittleFS and load config
+    // Load config
+    config.begin();
 
-    // create wifiManager
+    // Setup Wi-Fi manager
     wifiManager = new WiFiManager(config);
     wifiManager->begin();
 
-    // optional: set AP-start callback to start your webserver when AP is active
-    // wifiManager->setAPStartedCallback([&]() {
-    //     webServer.beginAP(); // start AsyncWebServer, mount LittleFS files, captive portal, etc.
-    // });
+    // Setup webserver
+    webServer = new ServerManager(80); // default port 80
+    webServer->addRouter(&infoRouter); // router imported from api.h
 
-    // Try to connect from config for 10 seconds
+     webServer->use(new LoggerMiddleware());
+
+    // AP started callback
+    wifiManager->setAPStartedCallback([&]() {
+        Serial.println("Starting webserver in AP mode...");
+        webServer->begin();
+    });
+
+    // Try connecting to Wi-Fi from config
     if (!wifiManager->connectFromConfig(10000)) {
-        // connect failed -> start AP for phone to connect and configure
-        wifiManager->startAP("AI-Bot-Setup", ""); // open AP; change pass if you want
+        Serial.println("WiFi connect failed, starting AP...");
+        wifiManager->startAP("AI-Bot-Setup", "");
     } else {
-        Serial.print("Connected. IP: ");
+        Serial.print("Connected to Wi-Fi. IP: ");
         Serial.println(wifiManager->ipAddress());
-        // optionally start webserver in station mode:
-        // webServer.beginSTA();
+        webServer->begin(); // start webserver in STA mode
     }
 }
 
 void loop() {
-    // optional: print status every few seconds
     static unsigned long last = 0;
     if (millis() - last > 3000) {
         last = millis();

@@ -1,5 +1,5 @@
 #pragma once
-#include <ServerManager/Router.h>
+#include "Router.h"
 
 // Create router instance and define endpoints immediately
 Router infoRouter("/v1", [](Router* r) {
