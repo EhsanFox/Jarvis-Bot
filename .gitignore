@@ -39,3 +39,4 @@ Thumbs.db
 *.old
 firmware/config.json
 firmware/data/config.json
+firmware/data/web/*

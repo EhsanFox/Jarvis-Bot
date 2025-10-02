@@ -1,5 +1,6 @@
 #include "ServerManager.h"
-#include <ArduinoJson.h> // <----- include ArduinoJson
+#include <ArduinoJson.h>
+#include <LittleFS.h>
 
 ServerManager::ServerManager(uint16_t port) : _server(port) {}
 
@@ -25,6 +26,15 @@ void ServerManager::addRouter(Router* router) {
 }
 
 void ServerManager::begin() {
+    // Mount FS
+    if (!LittleFS.begin(true)) {
+        Serial.println("⚠️ Failed to mount LittleFS");
+        return;
+    }
+
+    // Serve static files (React build)
+    _server.serveStatic("/", LittleFS, "/web/").setDefaultFile("index.html");
+
     for (auto router : _routers) {
         auto registerRoute = [this](Router::Route route, WebRequestMethod method) {
             _server.on(route.path.c_str(), method, [this, route](AsyncWebServerRequest* request){
