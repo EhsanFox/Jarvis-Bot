@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional smooth transitions for colors */
+html {
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+/* RTL support placeholder */
+body.rtl {
+  direction: rtl;
+}
