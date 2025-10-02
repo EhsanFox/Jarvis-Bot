@@ -9,5 +9,12 @@
   },
   "server": {
     "port": 80
+  },
+  "jwt": {
+    "secret": "YourJWTSecretKey",
+    "expiration": 3600,
+    "issuer": "jarvis-ai",
+    "audience": "jarvis-ai-users",
+    "algorithm": "HS256"
   }
 }
