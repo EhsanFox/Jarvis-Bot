@@ -1,6 +1,6 @@
 #include "ServerManager.h"
-#include "../include/HttpError.h"
-#include "../include/HttpSuccess.h"
+#include "HttpError.h"
+#include "HttpSuccess.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
@@ -39,85 +39,141 @@ void ServerManager::begin() {
 
     for (auto router : _routers) {
         auto registerRoute = [this, router](Router::Route route, WebRequestMethod method) {
-            _server.on(route.path.c_str(), method, [this, route, router](AsyncWebServerRequest* request) {
-                size_t i = 0;
-                std::function<void()> runMiddlewares;
-                runMiddlewares = [&]() {
-                    if (i < _middlewares.size()) {
-                        Middleware* mw = _middlewares[i++];
-                        mw->handle(request, runMiddlewares);
-                    } else {
-                        try {
-                            // ✅ Run router-level guards
-                            for (auto guard : router->routerGuards()) {
-                                if (!guard->canActivate(request)) return;
-                            }
-                            // ✅ Run route-level guards
-                            for (auto guard : route.guards) {
-                                if (!guard->canActivate(request)) return;
-                            }
+            Serial.print("Registering route: ");
+            Serial.println(route.path);
 
-                            // Then run handler
-                            DynamicJsonDocument doc(2048);
-                            String result = route.handler(request);
-
-                            DynamicJsonDocument tmp(1024);
-                            DeserializationError err = deserializeJson(tmp, result);
-                            doc["ok"] = true;
-                            if (!err) {
-                                doc["data"] = tmp.as<JsonVariant>();
+            // Case 1: normal GET/POST handler (no body)
+            if (route.handler) {
+                _server.on(route.path.c_str(), method,
+                    [this, route, router](AsyncWebServerRequest* request) {
+                        size_t i = 0;
+                        std::function<void()> runMiddlewares;
+                        runMiddlewares = [&]() {
+                            if (i < _middlewares.size()) {
+                                Middleware* mw = _middlewares[i++];
+                                mw->handle(request, runMiddlewares);
                             } else {
-                                doc["data"] = result;
-                            }
+                                try {
+                                    // Run router guards
+                                    for (auto guard : router->routerGuards())
+                                        if (!guard->canActivate(request)) return;
+                                    // Run route guards
+                                    for (auto guard : route.guards)
+                                        if (!guard->canActivate(request)) return;
 
-                            String output;
-                            serializeJson(doc, output);
-                            request->send(200, "application/json", output);
-                        } catch (const HttpSuccess& s) {
-                            // Handle HttpSuccess responses
-                            if (s.response()) {
-                                request->send(s.response());
-                            } else {
-                                DynamicJsonDocument tmp(1024);
-                                DeserializationError err = deserializeJson(tmp, s.message());
-                                DynamicJsonDocument doc(256);
-                                doc["ok"] = true;
-                                if (!err) {
-                                    doc["data"] = tmp.as<JsonVariant>();
-                                } else {
-                                    doc["data"] = s.message();
+                                    HttpSuccess result = route.handler(request);
+                                    if (result.response()) {
+                                        request->send(result.response());
+                                    } else {
+                                        DynamicJsonDocument tmp(1024);
+                                        DeserializationError err = deserializeJson(tmp, result.message());
+                                        DynamicJsonDocument doc(256);
+                                        doc["ok"] = true;
+                                        if (!err) {
+                                            doc["data"] = tmp.as<JsonVariant>();
+                                        } else {
+                                            doc["data"] = result.message();
+                                        }
+                                        String output;
+                                        serializeJson(doc, output);
+                                        request->send(200, "application/json", output);
+                                    }
+                                } catch (const HttpError& e) {
+                                    DynamicJsonDocument doc(256);
+                                    doc["ok"] = false;
+                                    doc["error"] = e.message();
+                                    String output;
+                                    serializeJson(doc, output);
+                                    request->send(e.statusCode(), "application/json", output);
+                                } catch (const std::exception& e) {
+                                    DynamicJsonDocument doc(256);
+                                    doc["ok"] = false;
+                                    doc["error"] = e.what();
+                                    String output;
+                                    serializeJson(doc, output);
+                                    request->send(500, "application/json", output);
+                                } catch (...) {
+                                    DynamicJsonDocument doc(256);
+                                    doc["ok"] = false;
+                                    doc["error"] = "Unknown error";
+                                    String output;
+                                    serializeJson(doc, output);
+                                    request->send(500, "application/json", output);
                                 }
-                                String output;
-                                serializeJson(doc, output);
-                                request->send(200, "application/json", output);
                             }
-                        } catch (const HttpError& e) {
-                            // Handle HttpError exceptions
-                            DynamicJsonDocument doc(256);
-                            doc["ok"] = false;
-                            doc["error"] = e.message();
-                            String output;
-                            serializeJson(doc, output);
-                            request->send(e.statusCode(), "application/json", output);
-                        } catch (const std::exception& e) {
-                            DynamicJsonDocument doc(256);
-                            doc["ok"] = false;
-                            doc["error"] = e.what();
-                            String output;
-                            serializeJson(doc, output);
-                            request->send(500, "application/json", output);
-                        } catch (...) {
-                            DynamicJsonDocument doc(256);
-                            doc["ok"] = false;
-                            doc["error"] = "Unknown error";
-                            String output;
-                            serializeJson(doc, output);
-                            request->send(500, "application/json", output);
+                        };
+                        runMiddlewares();
+                    });
+            }
+
+            // Case 2: POST with body handler
+            else if (route.bodyHandler && method == HTTP_POST) {
+                _server.on(route.path.c_str(), HTTP_POST,
+                    [](AsyncWebServerRequest* request) {
+                        // the final callback (no-op, handled in bodyHandler)
+                    },
+                    NULL, // no file upload handler
+                    [this, route, router](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+                        if (index + len == total) {
+                            size_t i = 0;
+                            std::function<void()> runMiddlewares;
+                            runMiddlewares = [&]() {
+                                if (i < _middlewares.size()) {
+                                    Middleware* mw = _middlewares[i++];
+                                    mw->handle(request, runMiddlewares);
+                                } else {
+                                    try {
+                                        // Run guards
+                                        for (auto guard : router->routerGuards())
+                                            if (!guard->canActivate(request)) return;
+                                        for (auto guard : route.guards)
+                                            if (!guard->canActivate(request)) return;
+
+                                        HttpSuccess result = route.bodyHandler(request, data);
+                                        if (result.response()) {
+                                            request->send(result.response());
+                                        } else {
+                                            DynamicJsonDocument tmp(1024);
+                                            DeserializationError err = deserializeJson(tmp, result.message());
+                                            DynamicJsonDocument doc(256);
+                                            doc["ok"] = true;
+                                            if (!err) {
+                                                doc["data"] = tmp.as<JsonVariant>();
+                                            } else {
+                                                doc["data"] = result.message();
+                                            }
+                                            String output;
+                                            serializeJson(doc, output);
+                                            request->send(200, "application/json", output);
+                                        }
+                                    } catch (const HttpError& e) {
+                                        DynamicJsonDocument doc(256);
+                                        doc["ok"] = false;
+                                        doc["error"] = e.message();
+                                        String output;
+                                        serializeJson(doc, output);
+                                        request->send(e.statusCode(), "application/json", output);
+                                    } catch (const std::exception& e) {
+                                        DynamicJsonDocument doc(256);
+                                        doc["ok"] = false;
+                                        doc["error"] = e.what();
+                                        String output;
+                                        serializeJson(doc, output);
+                                        request->send(500, "application/json", output);
+                                    } catch (...) {
+                                        DynamicJsonDocument doc(256);
+                                        doc["ok"] = false;
+                                        doc["error"] = "Unknown error";
+                                        String output;
+                                        serializeJson(doc, output);
+                                        request->send(500, "application/json", output);
+                                    }
+                                }
+                            };
+                            runMiddlewares();
                         }
-                    }
-                };
-                runMiddlewares();
-            });
+                    });
+            }
         };
 
         for (auto route : router->getEndpoints()) registerRoute(route, HTTP_GET);
@@ -143,16 +199,24 @@ void ServerManager::processRequest(AsyncWebServerRequest* request,
     // 2. Run handler inside try/catch
     DynamicJsonDocument doc(2048);
     try {
-        String result = route.handler(request);
-
-        // Try parsing result as JSON
-        DynamicJsonDocument tmp(1024);
-        DeserializationError err = deserializeJson(tmp, result);
-        doc["ok"] = true;
-        if (!err) {
-            doc["data"] = tmp.as<JsonVariant>();
+        HttpSuccess result = route.handler(request);
+        
+        // Handle HttpSuccess responses
+        if (result.response()) {
+            request->send(result.response());
         } else {
-            doc["data"] = result;
+            DynamicJsonDocument tmp(1024);
+            DeserializationError err = deserializeJson(tmp, result.message());
+            DynamicJsonDocument doc(256);
+            doc["ok"] = true;
+            if (!err) {
+                doc["data"] = tmp.as<JsonVariant>();
+            } else {
+                doc["data"] = result.message();
+            }
+            String output;
+            serializeJson(doc, output);
+            request->send(200, "application/json", output);
         }
     } catch (const HttpError& e) {
         // Handle HttpError exceptions

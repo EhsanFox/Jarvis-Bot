@@ -1,8 +1,8 @@
 #pragma once
 #include <ArduinoJson.h>
 #include <base64.h>
-#include "../lib/Crypto/SHA256.h" // Include custom SHA256 implementation
-#include "../lib/ConfigManager/ConfigManager.h" // Include ConfigManager for secret key
+#include <mbedtls/md.h> // Include mbedTLS for HMAC-SHA256
+#include "ConfigManager.h" // Include ConfigManager for secret key
 
 class JWTAuth {
 public:
@@ -56,13 +56,18 @@ public:
     }
 
 private:
-    // HMAC-SHA256 implementation
+    // HMAC-SHA256 implementation using mbedTLS
     static String hmacSha256(const String& message, const String& key) {
-        uint8_t hash[32];
-        SHA256 sha256;
-        sha256.resetHMAC(reinterpret_cast<const uint8_t*>(key.c_str()), key.length());
-        sha256.update(reinterpret_cast<const uint8_t*>(message.c_str()), message.length());
-        sha256.finalizeHMAC(reinterpret_cast<const uint8_t*>(key.c_str()), key.length(), hash, sizeof(hash));
+        unsigned char hash[32];
+        mbedtls_md_context_t ctx;
+        const mbedtls_md_info_t* info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+
+        mbedtls_md_init(&ctx);
+        mbedtls_md_setup(&ctx, info, 1);
+        mbedtls_md_hmac_starts(&ctx, reinterpret_cast<const unsigned char*>(key.c_str()), key.length());
+        mbedtls_md_hmac_update(&ctx, reinterpret_cast<const unsigned char*>(message.c_str()), message.length());
+        mbedtls_md_hmac_finish(&ctx, hash);
+        mbedtls_md_free(&ctx);
 
         String result;
         for (int i = 0; i < 32; i++) {

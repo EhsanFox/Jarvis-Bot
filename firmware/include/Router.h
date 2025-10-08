@@ -5,6 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include "Middleware.h"
 #include "Guard.h"
+#include "HttpSuccess.h"
 
 class Router {
 public:
@@ -19,24 +20,33 @@ public:
     // Route structure
     struct Route {
         String path;
-        std::function<String(AsyncWebServerRequest*)> handler;
+        std::function<HttpSuccess(AsyncWebServerRequest*)> handler;
+        std::function<HttpSuccess(AsyncWebServerRequest*, const uint8_t*)> bodyHandler; // Updated to const uint8_t*
         std::vector<Guard*> guards;   // ✅ per-route guards
     };
 
     // Add GET endpoint
     void get(const String& endpoint,
-             std::function<String(AsyncWebServerRequest*)> handler,
+             std::function<HttpSuccess(AsyncWebServerRequest*)> handler,
              std::vector<Guard*> guards = {}) 
     {
-        _getEndpoints.push_back({_basePath + endpoint, handler, guards});
+        _getEndpoints.push_back({_basePath + endpoint, handler, nullptr, guards});
     }
 
     // Add POST endpoint
     void post(const String& endpoint,
-              std::function<String(AsyncWebServerRequest*)> handler,
+              std::function<HttpSuccess(AsyncWebServerRequest*)> handler,
               std::vector<Guard*> guards = {}) 
     {
-        _postEndpoints.push_back({_basePath + endpoint, handler, guards});
+        _postEndpoints.push_back({_basePath + endpoint, handler, nullptr, guards});
+    }
+
+    // Add POST endpoint with body handler
+    void postWithBody(const String& endpoint,
+                      std::function<HttpSuccess(AsyncWebServerRequest*, const uint8_t*)> bodyHandler, // Updated to const uint8_t*
+                      std::vector<Guard*> guards = {}) 
+    {
+        _postEndpoints.push_back({_basePath + endpoint, nullptr, bodyHandler, guards});
     }
 
     // Add router-wide guards

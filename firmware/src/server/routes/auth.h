@@ -8,18 +8,24 @@
 const String LOGIN_PASSWORD = "supersecret";
 
 // Auth router
-Router authRouter("/auth", [](Router* r) {
-    r->post("/login", [](AsyncWebServerRequest* req) -> String {
-        if (!req->hasParam("password", true)) {
+Router authRouter("/auth", [](Router *r) {
+    r->postWithBody("/login", [](AsyncWebServerRequest *request, const uint8_t *data) -> HttpSuccess {
+        DynamicJsonDocument body(1024);
+        DeserializationError error = deserializeJson(body, data);
+        if (error) {
+            throw HttpError(400, "Invalid JSON body");
+        }
+
+        // Get the password from the JSON body
+        String password = body["password"] | "";
+        String inputPass = password;
+        inputPass.trim();  // removes leading/trailing spaces/newlines
+        if (inputPass.isEmpty()) {
             throw HttpError(400, "Password is required");
         }
 
-        // Get the password from the request body
-        String password = req->getParam("password", true)->value();
-
-        // Validate the password
-        if (password != LOGIN_PASSWORD) {
-            throw HttpError(401, "Invalid password");
+        if (inputPass != LOGIN_PASSWORD) {
+            throw HttpError(400, "Invalid password.");
         }
 
         // Create a JWT token
@@ -32,10 +38,10 @@ Router authRouter("/auth", [](Router* r) {
 
         // Set the token as a cookie
         String responseBody = "{\"ok\": true, \"data\": { \"accessToken\": \"" + token + "\" } }";
-        AsyncWebServerResponse* response = req->beginResponse(200, "application/json", responseBody);
+        AsyncWebServerResponse* response = request->beginResponse(200, "application/json", responseBody);
         response->addHeader("Set-Cookie", "accessToken=" + token + "; HttpOnly; Path=/");
 
-        // Use HttpSuccess to handle the response
-        throw HttpSuccess(responseBody, response);
-    });
+        // Send the response
+        return HttpSuccess("Access Token Granted.", response);
+    }); // Pass an empty vector of guards
 });

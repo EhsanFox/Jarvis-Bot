@@ -1,4 +1,5 @@
 {
+  "isReady": false,
   "wifi": {
     "ssid": "YourWiFiName",
     "password": "YourWiFiPassword"
