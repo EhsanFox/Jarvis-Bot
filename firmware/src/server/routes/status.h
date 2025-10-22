@@ -6,8 +6,9 @@
 #include "ConfigManager.h"
 
 Router statusRouter("/status", [](Router *r) {
-    r->get("/wizard", [](AsyncWebServerRequest *request) -> HttpSuccess {
-        bool isReady = ConfigManager::getInstance().get("isReady");
-        return HttpSuccess("Ok.");
+    r->get("/wizard", [r](AsyncWebServerRequest *request) -> HttpSuccess {
+        ConfigManager* config = r->use<ConfigManager>("config");
+        bool isReady = config->get("isReady");
+        return HttpSuccess(isReady);
     }); // No guards for status route
 });

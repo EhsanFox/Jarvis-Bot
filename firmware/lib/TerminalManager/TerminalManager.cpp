@@ -1,4 +1,6 @@
 #include "TerminalManager.h"
+#include "../../include/Command.h"
+#include "../../include/DependencyContainer.h"
 
 void TerminalManager::addCommand(Command* cmd) {
     _commands.push_back(cmd);
@@ -7,10 +9,6 @@ void TerminalManager::addCommand(Command* cmd) {
 void TerminalManager::handleInput() {
     while (Serial.available()) {
         char c = Serial.read();
-        Serial.print("⮕ Received char: "); // log every char
-        if (c == '\r') Serial.println("\\r");
-        else if (c == '\n') Serial.println("\\n");
-        else Serial.println(c);
 
         if (c == '\r') continue; // ignore carriage return
         if (c == '\n') {
@@ -37,8 +35,9 @@ void TerminalManager::processLine(const String& line) {
     }
 
     bool found = false;
-    for (auto cmd : _commands) {
+    for (Command* cmd : _commands) {
         if (cmd->getCommand() == cmdName) {
+            cmd->attachDependencies(&_deps);
             String output = cmd->run(args);
             Serial.println(output);
             found = true;
