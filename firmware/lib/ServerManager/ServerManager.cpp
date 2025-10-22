@@ -12,6 +12,9 @@ void ServerManager::use(Middleware* mw) {
 }
 
 void ServerManager::addRouter(Router* router) {
+    // ✅ Attach dependency container before registration
+    router->attachDependencies(&_deps);
+
     _routers.push_back(router);
     Serial.print("📦 Router mounted with base path: ");
     Serial.println(router->basePath());
@@ -42,7 +45,7 @@ void ServerManager::begin() {
             Serial.print("Registering route: ");
             Serial.println(route.path);
 
-            // Case 1: normal GET/POST handler (no body)
+            // Case 1: normal GET/POST handler
             if (route.handler) {
                 _server.on(route.path.c_str(), method,
                     [this, route, router](AsyncWebServerRequest* request) {
@@ -65,17 +68,7 @@ void ServerManager::begin() {
                                     if (result.response()) {
                                         request->send(result.response());
                                     } else {
-                                        DynamicJsonDocument tmp(1024);
-                                        DeserializationError err = deserializeJson(tmp, result.message());
-                                        DynamicJsonDocument doc(256);
-                                        doc["ok"] = true;
-                                        if (!err) {
-                                            doc["data"] = tmp.as<JsonVariant>();
-                                        } else {
-                                            doc["data"] = result.message();
-                                        }
-                                        String output;
-                                        serializeJson(doc, output);
+                                        String output = result.output();
                                         request->send(200, "application/json", output);
                                     }
                                 } catch (const HttpError& e) {
@@ -109,10 +102,8 @@ void ServerManager::begin() {
             // Case 2: POST with body handler
             else if (route.bodyHandler && method == HTTP_POST) {
                 _server.on(route.path.c_str(), HTTP_POST,
-                    [](AsyncWebServerRequest* request) {
-                        // the final callback (no-op, handled in bodyHandler)
-                    },
-                    NULL, // no file upload handler
+                    [](AsyncWebServerRequest* request) {},
+                    nullptr, // no file upload handler
                     [this, route, router](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
                         if (index + len == total) {
                             size_t i = 0;
@@ -133,17 +124,7 @@ void ServerManager::begin() {
                                         if (result.response()) {
                                             request->send(result.response());
                                         } else {
-                                            DynamicJsonDocument tmp(1024);
-                                            DeserializationError err = deserializeJson(tmp, result.message());
-                                            DynamicJsonDocument doc(256);
-                                            doc["ok"] = true;
-                                            if (!err) {
-                                                doc["data"] = tmp.as<JsonVariant>();
-                                            } else {
-                                                doc["data"] = result.message();
-                                            }
-                                            String output;
-                                            serializeJson(doc, output);
+                                            String output = result.output();
                                             request->send(200, "application/json", output);
                                         }
                                     } catch (const HttpError& e) {
@@ -189,37 +170,22 @@ void ServerManager::processRequest(AsyncWebServerRequest* request,
                                    const std::vector<Guard*>& routerGuards,
                                    std::function<void()> next) {
     // 1. Run guards
-    for (auto guard : routerGuards) {
+    for (auto guard : routerGuards)
         if (!guard->canActivate(request)) return;
-    }
-    for (auto guard : route.guards) {
+    for (auto guard : route.guards)
         if (!guard->canActivate(request)) return;
-    }
 
     // 2. Run handler inside try/catch
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(1024);
     try {
         HttpSuccess result = route.handler(request);
-        
-        // Handle HttpSuccess responses
         if (result.response()) {
             request->send(result.response());
         } else {
-            DynamicJsonDocument tmp(1024);
-            DeserializationError err = deserializeJson(tmp, result.message());
-            DynamicJsonDocument doc(256);
-            doc["ok"] = true;
-            if (!err) {
-                doc["data"] = tmp.as<JsonVariant>();
-            } else {
-                doc["data"] = result.message();
-            }
-            String output;
-            serializeJson(doc, output);
+            String output = result.output();
             request->send(200, "application/json", output);
         }
     } catch (const HttpError& e) {
-        // Handle HttpError exceptions
         doc["ok"] = false;
         doc["error"] = e.message();
         String output;
