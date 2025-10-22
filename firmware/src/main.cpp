@@ -5,17 +5,22 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
+#include "Displays.h"
+
 #include <ConfigManager.h>
 #include <WiFiManager.h>
 #include <ServerManager.h>
 #include <TerminalManager.h>
-#include <OledManager.h>
 #include <FaceManager.h>
 
-#include "server/routes/auth.h" 
 #include "server/middlewares/logger.h"
-#include "commands/info.h"
 
+#include "server/routes/auth.h" 
+#include "server/routes/status.h"
+#include "server/routes/wifi.h"
+
+#include "commands/info.h"
+#include "commands/wifi.h"
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -33,12 +38,12 @@ Face *face;
 
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-    Wire.begin(21, 22);
+    Wire.begin(SDA_PIN, SCL_PIN);
     Serial.begin(115200);
     delay(1000);
     Serial.println("Booting...");
     
-    face = new Face(/* screenWidth = */ 128, /* screenHeight = */ 64, /* eyeSize = */ 40);
+    face = new Face(SCREEN_WIDTH, SCREEN_HEIGHT, /* eyeSize = */ 40);
     // Assign the current expression
     face->Expression.GoTo_Normal();
 
@@ -55,9 +60,6 @@ void setup() {
 
     // Set blink rate
     face->Blink.Timer.SetIntervalMillis(4000);
- 
-    // Setup Terminal Commands
-    terminal.addCommand(infoCommand);
 
     // Setup Wi-Fi manager
     wifiManager = new WiFiManager( config.get("wifi")["ssid"] | "",
@@ -71,11 +73,26 @@ void setup() {
         config.get("server")["port"] | 80
     );
     
+    // TODO: Add Dependencies
+    webServer->addDependency("wifi", &wifiManager);
+    webServer->addDependency("config", &config);
+    webServer->addDependency("face", &face);
+    
+    terminal.addDependency("wifi", &wifiManager);
+    terminal.addDependency("config", &config);
+    terminal.addDependency("face", &face);
+
     // TODO: Add Middlewares
     webServer->use(new LoggerMiddleware());
     
     // TODO: Add Routers
     webServer->addRouter(&authRouter);
+    webServer->addRouter(&statusRouter);
+    webServer->addRouter(&wifiRouter);
+
+    // Setup Terminal Commands
+    terminal.addCommand(infoCommand);
+    terminal.addCommand(wifiCommand);
 
     wifiManager->setAPStartedCallback([&]() {
         Serial.println("Starting webserver in AP mode...");

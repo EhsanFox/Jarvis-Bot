@@ -8,6 +8,32 @@ void WiFiManager::begin() {
     WiFi.mode(WIFI_STA);
 }
 
+void WiFiManager::startScan() {
+    WiFi.scanDelete();
+    WiFi.scanNetworks(true); // async scan
+}
+
+bool WiFiManager::isScanComplete() const {
+    return WiFi.scanComplete() >= 0;
+}
+
+DynamicJsonDocument WiFiManager::getScanResults() {
+    int n = WiFi.scanComplete();
+    DynamicJsonDocument doc(2048);
+    JsonArray arr = doc.to<JsonArray>();
+
+    for (int i = 0; i < n; ++i) {
+        JsonObject obj = arr.createNestedObject();
+        obj["ssid"] = WiFi.SSID(i);
+        obj["rssi"] = WiFi.RSSI(i);
+        obj["secure"] = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN);
+        obj["hidden"] = false;
+    }
+    // WiFi.scanDelete(); // clean up old results
+    startScan();
+    return doc;
+}
+
 bool WiFiManager::connectSTA(unsigned long timeout) {
     if (_ssid.length() == 0) return false;
 
@@ -20,6 +46,31 @@ bool WiFiManager::connectSTA(unsigned long timeout) {
     }
     Serial.println();
     return WiFi.status() == WL_CONNECTED;
+}
+
+/*
+bool WiFiManager::connectTo(const String& ssid, const String& password = "", unsigned long timeout = 10000) {
+    WiFi.begin(ssid.c_str(), password.c_str());
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < timeout) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println();
+    return WiFi.status() == WL_CONNECTED;
+}
+*/
+
+void WiFiManager::disconnect() {
+     if (WiFi.isConnected()) {
+        Serial.println("🔌 Disconnecting from Wi-Fi...");
+        WiFi.disconnect(true);  // true = erase credentials
+    }
+
+    // Switch to AP mode by calling existing method
+    Serial.println("📡 Switching to Access Point mode...");
+    startAP();
 }
 
 void WiFiManager::startAP() {
@@ -35,6 +86,8 @@ void WiFiManager::startAP() {
         Serial.print("AP started! IP: ");
         Serial.println(WiFi.softAPIP());
         if (_apStartedCallback) _apStartedCallback();
+
+        startScan();
     } else {
         Serial.println("❌ Failed to start AP!");
     }
