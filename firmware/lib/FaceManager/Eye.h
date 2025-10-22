@@ -51,7 +51,7 @@ class Eye {
 
     void ApplyPreset(const EyeConfig preset);
     void TransitionTo(const EyeConfig preset);
-    void Draw();
+    void Draw(U8G2 &display);
 };
 
 #endif

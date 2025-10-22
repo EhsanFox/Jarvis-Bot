@@ -49,9 +49,9 @@ void Eye::Update() {
 	BlinkTransformation.Update();
 }
 
-void Eye::Draw() {
+void Eye::Draw(U8G2 &display) {
 	Update();
-	EyeDrawer::Draw(CenterX, CenterY, FinalConfig);
+	EyeDrawer::Draw(display, CenterX, CenterY, FinalConfig);
 }
 
 void Eye::ApplyPreset(const EyeConfig config) {

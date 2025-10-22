@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <Arduino.h>
 #include "Common.h"
 #include "EyeConfig.h"
+#include <U8g2lib.h>
 
 enum CornerType {T_R, T_L, B_L, B_R};
 
@@ -24,7 +25,7 @@ enum CornerType {T_R, T_L, B_L, B_R};
  */
 class EyeDrawer {
   public:
-    static void Draw(int16_t centerX, int16_t centerY, EyeConfig *config) {
+    static void Draw(U8G2 &display, int16_t centerX, int16_t centerY, EyeConfig *config) {
       // Amount by which corners will be shifted up/down based on requested "slope"
       int32_t delta_y_top = config->Height * config->Slope_Top / 2.0;
       int32_t delta_y_bottom = config->Height * config->Slope_Bottom / 2.0;
@@ -55,47 +56,47 @@ class EyeDrawer {
       int32_t max_c_y = max(BLc_y, BRc_y);
 
       // Fill eye centre
-      EyeDrawer::FillRectangle(min_c_x, min_c_y, max_c_x, max_c_y, 1);
+      EyeDrawer::FillRectangle(display, min_c_x, min_c_y, max_c_x, max_c_y, 1);
 
       // Fill eye outwards to meet edges of rounded corners 
-      EyeDrawer::FillRectangle(TRc_x, TRc_y, BRc_x + config->Radius_Bottom, BRc_y, 1); // Right
-		  EyeDrawer::FillRectangle(TLc_x - config->Radius_Top, TLc_y, BLc_x, BLc_y, 1); // Left
-		  EyeDrawer::FillRectangle(TLc_x, TLc_y - config->Radius_Top, TRc_x, TRc_y, 1); // Top
-		  EyeDrawer::FillRectangle(BLc_x, BLc_y, BRc_x, BRc_y + config->Radius_Bottom, 1); // Bottom
+      EyeDrawer::FillRectangle(display, TRc_x, TRc_y, BRc_x + config->Radius_Bottom, BRc_y, 1); // Right
+		  EyeDrawer::FillRectangle(display, TLc_x - config->Radius_Top, TLc_y, BLc_x, BLc_y, 1); // Left
+		  EyeDrawer::FillRectangle(display, TLc_x, TLc_y - config->Radius_Top, TRc_x, TRc_y, 1); // Top
+		  EyeDrawer::FillRectangle(display, BLc_x, BLc_y, BRc_x, BRc_y + config->Radius_Bottom, 1); // Bottom
         
       // Draw slanted edges at top of bottom of eyes 
       // +ve Slope_Top means eyes slope downwards towards middle of face
       if(config->Slope_Top > 0) {
-        EyeDrawer::FillRectangularTriangle(TLc_x, TLc_y-config->Radius_Top, TRc_x, TRc_y-config->Radius_Top, 0);
-        EyeDrawer::FillRectangularTriangle(TRc_x, TRc_y-config->Radius_Top, TLc_x, TLc_y-config->Radius_Top, 1);
+        EyeDrawer::FillRectangularTriangle(display, TLc_x, TLc_y-config->Radius_Top, TRc_x, TRc_y-config->Radius_Top, 0);
+        EyeDrawer::FillRectangularTriangle(display, TRc_x, TRc_y-config->Radius_Top, TLc_x, TLc_y-config->Radius_Top, 1);
       } 
       else if(config->Slope_Top < 0) {
-        EyeDrawer::FillRectangularTriangle(TRc_x, TRc_y-config->Radius_Top, TLc_x, TLc_y-config->Radius_Top, 0);
-        EyeDrawer::FillRectangularTriangle(TLc_x, TLc_y-config->Radius_Top, TRc_x, TRc_y-config->Radius_Top, 1);
+        EyeDrawer::FillRectangularTriangle(display, TRc_x, TRc_y-config->Radius_Top, TLc_x, TLc_y-config->Radius_Top, 0);
+        EyeDrawer::FillRectangularTriangle(display, TLc_x, TLc_y-config->Radius_Top, TRc_x, TRc_y-config->Radius_Top, 1);
       }
       // Draw slanted edges at bottom of eyes
       if(config->Slope_Bottom > 0) {
-        EyeDrawer::FillRectangularTriangle(BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, 0);
-        EyeDrawer::FillRectangularTriangle(BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, 1);
+        EyeDrawer::FillRectangularTriangle(display, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, 0);
+        EyeDrawer::FillRectangularTriangle(display, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, 1);
       }
       else if (config->Slope_Bottom < 0) {
-        EyeDrawer::FillRectangularTriangle(BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, 0);
-        EyeDrawer::FillRectangularTriangle(BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, 1);
+        EyeDrawer::FillRectangularTriangle(display, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, 0);
+        EyeDrawer::FillRectangularTriangle(display, BRc_x+config->Radius_Bottom, BRc_y+config->Radius_Bottom, BLc_x-config->Radius_Bottom, BLc_y+config->Radius_Bottom, 1);
       }
 
       // Draw corners (which extend "outwards" towards corner of screen from supplied coordinate values)
       if(config->Radius_Top > 0) {
-        EyeDrawer::FillEllipseCorner(T_L, TLc_x, TLc_y, config->Radius_Top, config->Radius_Top, 1);
-        EyeDrawer::FillEllipseCorner(T_R, TRc_x, TRc_y, config->Radius_Top, config->Radius_Top, 1);
+        EyeDrawer::FillEllipseCorner(display, T_L, TLc_x, TLc_y, config->Radius_Top, config->Radius_Top, 1);
+        EyeDrawer::FillEllipseCorner(display, T_R, TRc_x, TRc_y, config->Radius_Top, config->Radius_Top, 1);
       }
       if(config->Radius_Bottom > 0) {
-        EyeDrawer::FillEllipseCorner(B_L, BLc_x, BLc_y, config->Radius_Bottom, config->Radius_Bottom, 1);
-        EyeDrawer::FillEllipseCorner(B_R, BRc_x, BRc_y, config->Radius_Bottom, config->Radius_Bottom, 1);
+        EyeDrawer::FillEllipseCorner(display, B_L, BLc_x, BLc_y, config->Radius_Bottom, config->Radius_Bottom, 1);
+        EyeDrawer::FillEllipseCorner(display, B_R, BRc_x, BRc_y, config->Radius_Bottom, config->Radius_Bottom, 1);
       }
     }
 
     // Draw rounded corners
-    static void FillEllipseCorner(CornerType corner, int16_t x0, int16_t y0, int32_t rx, int32_t ry, uint16_t color) {
+    static void FillEllipseCorner(U8G2 &display, CornerType corner, int16_t x0, int16_t y0, int32_t rx, int32_t ry, uint16_t color) {
       if (rx < 2) return;
       if (ry < 2) return;
       int32_t x, y;
@@ -107,7 +108,7 @@ class EyeDrawer {
 
       if (corner == T_R) {
         for(x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-          u8g2.drawHLine(x0, y0 - y, x);
+          display.drawHLine(x0, y0 - y, x);
           if(s >= 0) {
             s += fx2 * (1 - y);
             y--;
@@ -115,7 +116,7 @@ class EyeDrawer {
           s += ry2 * ((4 * x) + 6);
         }         
         for(x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-          u8g2.drawHLine(x0, y0 - y, x);
+          display.drawHLine(x0, y0 - y, x);
           if (s >= 0) {
             s += fy2 * (1 - x);
             x--;
@@ -126,7 +127,7 @@ class EyeDrawer {
 
       else if (corner == B_R) {
         for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-          u8g2.drawHLine(x0, y0 + y -1, x);
+          display.drawHLine(x0, y0 + y -1, x);
           if (s >= 0) {
             s += fx2 * (1 - y);
             y--;
@@ -134,7 +135,7 @@ class EyeDrawer {
           s += ry2 * ((4 * x) + 6);
         }
         for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-          u8g2.drawHLine(x0, y0 + y -1, x);
+          display.drawHLine(x0, y0 + y -1, x);
           if (s >= 0) {
             s += fy2 * (1 - x);
             x--;
@@ -145,7 +146,7 @@ class EyeDrawer {
 
       else if (corner == T_L) {
         for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-          u8g2.drawHLine(x0-x, y0 - y, x);
+          display.drawHLine(x0-x, y0 - y, x);
           if (s >= 0) {
             s += fx2 * (1 - y);
             y--;
@@ -153,7 +154,7 @@ class EyeDrawer {
           s += ry2 * ((4 * x) + 6);
         }
         for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-          u8g2.drawHLine(x0-x, y0 - y, x);
+          display.drawHLine(x0-x, y0 - y, x);
           if (s >= 0) {
             s += fy2 * (1 - x);
             x--;
@@ -164,7 +165,7 @@ class EyeDrawer {
 
       else if (corner == B_L) {
         for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-          u8g2.drawHLine(x0-x, y0 + y - 1, x);
+          display.drawHLine(x0-x, y0 + y - 1, x);
           if (s >= 0) {
             s += fx2 * (1 - y);
             y--;
@@ -172,7 +173,7 @@ class EyeDrawer {
           s += ry2 * ((4 * x) + 6);
         }
         for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-          u8g2.drawHLine(x0-x, y0 + y , x);
+          display.drawHLine(x0-x, y0 + y , x);
           if (s >= 0) {
             s += fy2 * (1 - x);
             x--;
@@ -183,7 +184,7 @@ class EyeDrawer {
     }
 
     // Fill a solid rectangle between specified coordinates
-    static void FillRectangle(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
+    static void FillRectangle(U8G2 &display, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
       // Always draw from TL->BR
       int32_t l = min(x0, x1);
       int32_t r = max(x0, x1);
@@ -191,21 +192,21 @@ class EyeDrawer {
       int32_t b = max(y0, y1);
       int32_t w = r-l;
       int32_t h = b-t; 
-      u8g2.setDrawColor(color);
-      u8g2.drawBox(l, t, w, h);
-      u8g2.setDrawColor(1);
+      display.setDrawColor(color);
+      display.drawBox(l, t, w, h);
+      display.setDrawColor(1);
     }
 
-    static void FillRectangularTriangle(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
-      u8g2.setDrawColor(color);
-      u8g2.drawTriangle(x0, y0, x1, y1, x1, y0);
-      u8g2.setDrawColor(1);
+    static void FillRectangularTriangle(U8G2 &display, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
+      display.setDrawColor(color);
+      display.drawTriangle(x0, y0, x1, y1, x1, y0);
+      display.setDrawColor(1);
     }
 
-    static void FillTriangle(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t color) {
-        u8g2.setDrawColor(color);
-        u8g2.drawTriangle(x0, y0, x1, y1, x2, y2);
-        u8g2.setDrawColor(1);
+    static void FillTriangle(U8G2 &display, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t color) {
+        display.setDrawColor(color);
+        display.drawTriangle(x0, y0, x1, y1, x2, y2);
+        display.setDrawColor(1);
     }
 };
 

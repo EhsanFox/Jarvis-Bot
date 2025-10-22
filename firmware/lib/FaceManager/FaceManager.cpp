@@ -14,16 +14,33 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "FaceManager.h"
 #include "Common.h"
 
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 4, /* data= */ 5);
+// U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 4, /* data= */ 5);
+
+// Left eye display (e.g., address 0x3C)
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2_left(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 4, /* data=*/ 5);
+
+// Right eye display (e.g., address 0x3D)
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2_right(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 4, /* data=*/ 5);
 
 Face::Face(uint16_t screenWidth, uint16_t screenHeight, uint16_t eyeSize) 
 	: LeftEye(*this), RightEye(*this), Blink(*this), Look(*this), Behavior(*this), Expression(*this) {
 
-  // Unlike almost every other Arduino library (and the I2C address scanner script etc.)
-  // u8g2 uses 8-bit I2C address, so we shift the 7-bit address left by one
-  u8g2.setI2CAddress(0x3C<<1);
-  u8g2.begin();
-  u8g2.clearBuffer();
+  	// Unlike almost every other Arduino library (and the I2C address scanner script etc.)
+  	// u8g2 uses 8-bit I2C address, so we shift the 7-bit address left by one
+
+  	// u8g2.setI2CAddress(0x3C<<1);
+  	// u8g2.begin();
+  	// u8g2.clearBuffer();
+
+	// Setup left eye display
+	u8g2_left.setI2CAddress(0x3C << 1);
+	u8g2_left.begin();
+	u8g2_left.clearBuffer();
+
+	// Setup right eye display
+	u8g2_right.setI2CAddress(0x3D << 1);
+	u8g2_right.begin();
+	u8g2_right.clearBuffer();
 
 	Width = screenWidth;
 	Height = screenHeight;
@@ -34,7 +51,7 @@ Face::Face(uint16_t screenWidth, uint16_t screenHeight, uint16_t eyeSize)
 
 	LeftEye.IsMirrored = true;
 
-  Behavior.Clear();
+  	Behavior.Clear();
 	Behavior.Timer.Start();
 }
 
@@ -79,15 +96,29 @@ void Face::Update() {
 
 void Face::Draw() {
   // Clear the display
-  u8g2.clearBuffer();
+  	// u8g2.clearBuffer();
   // Draw left eye
-	LeftEye.CenterX = CenterX - EyeSize / 2 - EyeInterDistance;
-	LeftEye.CenterY = CenterY;
-	LeftEye.Draw();
+	// LeftEye.CenterX = CenterX - EyeSize / 2 - EyeInterDistance;
+	// LeftEye.CenterY = CenterY;
+	// LeftEye.Draw();
   // Draw right eye
-	RightEye.CenterX = CenterX + EyeSize / 2 + EyeInterDistance;
-	RightEye.CenterY = CenterY;
-	RightEye.Draw();
+	// RightEye.CenterX = CenterX + EyeSize / 2 + EyeInterDistance;
+	// RightEye.CenterY = CenterY;
+	// RightEye.Draw();
   // Transfer the redrawn buffer to the display
-  u8g2.sendBuffer();
+  // u8g2.sendBuffer();
+
+  // LEFT EYE
+  u8g2_left.clearBuffer();
+  LeftEye.CenterX = CenterX;
+  LeftEye.CenterY = CenterY;
+  LeftEye.Draw(u8g2_left);
+  u8g2_left.sendBuffer();
+
+  // RIGHT EYE
+  u8g2_right.clearBuffer();
+  RightEye.CenterX = CenterX;
+  RightEye.CenterY = CenterY;
+  RightEye.Draw(u8g2_right);
+  u8g2_right.sendBuffer();
 }
