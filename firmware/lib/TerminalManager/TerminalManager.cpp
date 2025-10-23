@@ -35,7 +35,7 @@ void TerminalManager::processLine(const String& line) {
     }
 
     cmdName.toLowerCase();
-    args.toLowerCase();
+    // args.toLowerCase();
 
     bool found = false;
     for (Command* cmd : _commands) {
