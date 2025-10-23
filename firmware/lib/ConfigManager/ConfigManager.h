@@ -11,9 +11,12 @@ public:
         static ConfigManager instance;
         return instance;
     }
-    // Public API
-    JsonVariant get(const String& key);             // get value for a key
-    bool set(const String& key, const JsonVariant& value);  // set value for a key
+    
+    JsonVariant get(const String& key);
+    bool set(const String& key, const JsonVariant& value); 
+    bool set(const String& key, const String& value); 
+    bool set(const String& key, const bool& value);
+    bool set(const String& key, const int& value);
 
 private:
     const char* _filePath;

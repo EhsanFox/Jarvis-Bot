@@ -35,8 +35,9 @@ public:
     bool isScanComplete() const;
     DynamicJsonDocument getScanResults();
     void setAPStartedCallback(std::function<void()> cb) { _apStartedCallback = cb; }
-
-    // bool connectTo(const String& ssid,const String& password = "", unsigned long timeout = 10000);
+    void stopAP();
+    String tryConnect(const String& ssid, const String& password, unsigned long timeout = 10000);
+    bool connectTo(const String& ssid, const String& password = "", unsigned long timeout = 10000);
     void disconnect();
 
 private:

@@ -3,28 +3,34 @@
 #include "JWTAuth.h"
 #include "HttpError.h"
 #include "HttpSuccess.h"
+#include <ConfigManager.h>
 
-// Define the correct password for login
-const String LOGIN_PASSWORD = "supersecret";
 
 // Auth router
 Router authRouter("/auth", [](Router *r) {
-    r->postWithBody("/login", [](AsyncWebServerRequest *request, const uint8_t *data) -> HttpSuccess {
+    r->postWithBody("/login", [r](AsyncWebServerRequest *request, const uint8_t *data) -> HttpSuccess {
         DynamicJsonDocument body(1024);
         DeserializationError error = deserializeJson(body, data);
         if (error) {
             throw HttpError(400, "Invalid JSON body");
         }
 
+        ConfigManager* config = r->use<ConfigManager>("config");
         // Get the password from the JSON body
         String password = body["password"] | "";
         String inputPass = password;
         inputPass.trim();  // removes leading/trailing spaces/newlines
+        String hashedPassword = JWTAuth::hmacSha256(inputPass, config->get("jwt")["secret"].as<String>());
+        String LOGIN_PASSWORD = config->get("hashedPassword").as<String>();
+        Serial.print("Input Hashed Password: ");
+        Serial.println(hashedPassword);
+        Serial.print("Hashed Saved Password: ");
+        Serial.println(LOGIN_PASSWORD);
         if (inputPass.isEmpty()) {
             throw HttpError(400, "Password is required");
         }
 
-        if (inputPass != LOGIN_PASSWORD) {
+        if (hashedPassword != LOGIN_PASSWORD) {
             throw HttpError(400, "Invalid password.");
         }
 

@@ -48,8 +48,26 @@ bool WiFiManager::connectSTA(unsigned long timeout) {
     return WiFi.status() == WL_CONNECTED;
 }
 
-/*
-bool WiFiManager::connectTo(const String& ssid, const String& password = "", unsigned long timeout = 10000) {
+void WiFiManager::stopAP() {
+    // Only stop the AP if it’s actually running
+    if (WiFi.getMode() & WIFI_AP) {
+        Serial.println("🛑 Stopping Access Point...");
+        
+        // Disable only the AP interface, keep STA alive
+        WiFi.softAPdisconnect(true);
+        
+        // Switch mode to STA only, but do NOT reconnect
+        WiFi.mode(WIFI_STA);
+
+        Serial.println("✅ AP stopped, STA still connected.");
+        Serial.print("Current IP: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("ℹ️ No AP to stop.");
+    }
+}
+
+bool WiFiManager::connectTo(const String& ssid, const String& password, unsigned long timeout) {
     WiFi.begin(ssid.c_str(), password.c_str());
     Serial.print("Connecting to Wi-Fi");
     unsigned long start = millis();
@@ -60,7 +78,40 @@ bool WiFiManager::connectTo(const String& ssid, const String& password = "", uns
     Serial.println();
     return WiFi.status() == WL_CONNECTED;
 }
-*/
+
+String WiFiManager::tryConnect(const String& ssid, const String& password, unsigned long timeout) {
+    if (ssid.isEmpty()) {
+        Serial.println("⚠️ SSID is empty.");
+        return "";
+    }
+
+    // Keep AP active while connecting
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+    Serial.printf("🚀 Trying to connect to \"%s\"\n", ssid.c_str());
+
+    unsigned long start = millis();
+    wl_status_t status = WL_IDLE_STATUS;
+
+    while ((status = WiFi.status()) != WL_CONNECTED && millis() - start < timeout) {
+        delay(100);                 // Small delay to prevent WDT
+        yield();                    // Give CPU time to async_tcp
+        Serial.print(".");
+    }
+
+    Serial.println();
+
+    if (status == WL_CONNECTED) {
+        IPAddress ip = WiFi.localIP();
+        Serial.println("✅ Connected successfully!");
+        Serial.print("IP: ");
+        Serial.println(ip);
+        return ip.toString();
+    }
+
+    Serial.println("❌ Failed to connect. Wrong SSID or password?");
+    return "";
+}
 
 void WiFiManager::disconnect() {
      if (WiFi.isConnected()) {

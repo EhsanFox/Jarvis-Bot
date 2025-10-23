@@ -8,7 +8,7 @@
 Router statusRouter("/status", [](Router *r) {
     r->get("/wizard", [r](AsyncWebServerRequest *request) -> HttpSuccess {
         ConfigManager* config = r->use<ConfigManager>("config");
-        bool isReady = config->get("isReady");
-        return HttpSuccess(isReady);
+        bool isReady = config->get("isReady").as<bool>();
+        return HttpSuccess(!isReady);
     }); // No guards for status route
 });

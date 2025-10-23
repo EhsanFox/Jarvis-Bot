@@ -53,9 +53,8 @@ public:
 
         // Compare signatures
         return providedSignature == recreatedSignature;
-    }
-
-private:
+    };
+    
     // HMAC-SHA256 implementation using mbedTLS
     static String hmacSha256(const String& message, const String& key) {
         unsigned char hash[32];

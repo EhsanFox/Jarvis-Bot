@@ -55,14 +55,40 @@ bool ConfigManager::save() {
 
 // Public get: returns JsonVariant, can be string, object, number, etc.
 JsonVariant ConfigManager::get(const String& key) {
-    if (!_doc.containsKey(key)) {
-        return JsonVariant(); // null
+    // Split key by '.'
+    int start = 0;
+    JsonVariant current = _doc;
+
+    while (true) {
+        int dotIndex = key.indexOf('.', start);
+        String part = (dotIndex == -1) ? key.substring(start) : key.substring(start, dotIndex);
+
+        if (!current.containsKey(part)) {
+            return JsonVariant(); // not found
+        }
+
+        current = current[part];
+        if (dotIndex == -1) break; // last segment
+        start = dotIndex + 1;
     }
-    return _doc[key];
+
+    return current;
 }
 
 // Public set: assign value to key, value can be primitive or JSON object
 bool ConfigManager::set(const String& key, const JsonVariant& value) {
+    _doc[key] = value;
+    return save();
+}
+bool ConfigManager::set(const String& key, const String& value) {
+    _doc[key] = value;
+    return save();
+}
+bool ConfigManager::set(const String& key, const bool& value) {
+    _doc[key] = value;
+    return save();
+}
+bool ConfigManager::set(const String& key, const int& value) {
     _doc[key] = value;
     return save();
 }
