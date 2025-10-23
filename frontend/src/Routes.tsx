@@ -7,9 +7,9 @@ import {
 } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
-// import Setup from "./pages/Setup";
-//import DashboardLanding from "./pages/dashboard/DashboardLanding";
-//wimport DashboardConfig from "./pages/dashboard/DashboardConfig";
+import Wizard from "./pages/Wizard";
+import Dashboard from "./pages/Dashboard";
+import AuthGuard from "./guards/AuthGuard";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -18,11 +18,15 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Landing name="Jarvis" />} />
 
         <Route path="/login" element={<Login />} />
-        {/*}
-        <Route path="/setup" element={<Setup />} />
-        <Route path="/dashboard" element={<DashboardLanding />} />
-              <Route path="/dashboard/config" element={<DashboardConfig />} />
-        */}
+        <Route path="/wizard" element={<Wizard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <AuthGuard>
+              <Dashboard />
+            </AuthGuard>
+          }
+        />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

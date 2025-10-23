@@ -3,16 +3,33 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react"; // icon
 import DarkModeToggle from "../components/DarkModeToggle";
 import PixelEye from "../components/pixelEye";
+import { postApi } from "../api/api";
+import { useNotification } from "../providers/NotificationProvider";
+
+interface LoginResponse {
+  accessToken: string;
+}
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const { notify } = useNotification();
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Logging in with:", { password });
-    navigate("/dashboard"); // redirect after login
+    try {
+      const res = await postApi<LoginResponse>("/auth/login", {
+        password,
+      });
+      if (res.ok && (res.data as LoginResponse).accessToken) {
+        navigate("/dashboard"); // redirect after login
+        console.log("User logged in.", res);
+      } else throw new Error(res.data as string);
+    } catch (error) {
+      console.error(error);
+      notify(error as string, "error");
+    }
   };
 
   return (

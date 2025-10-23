@@ -17,8 +17,8 @@ const Landing: React.FC<LandingProps> = ({ name }) => {
   useEffect(() => {
     const checkSetupAvailability = async () => {
       try {
-        const res = await getApi<{ setupAvailable: boolean }>("/check-setup");
-        setShowSetup(res.data?.setupAvailable || false);
+        const res = await getApi<boolean>("/status/wizard");
+        setShowSetup((res.data as boolean) || false);
       } catch (err) {
         console.error(err);
       } finally {
@@ -55,20 +55,21 @@ const Landing: React.FC<LandingProps> = ({ name }) => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
-          {showSetup && (
+          {showSetup ? (
             <button
-              onClick={() => navigate("/setup")}
+              onClick={() => navigate("/wizard")}
               className="px-8 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition w-full sm:w-auto"
             >
               Setup Wizard
             </button>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="px-8 py-3 bg-gray-800 dark:bg-gray-700 text-white font-semibold rounded-lg shadow-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition w-full sm:w-auto"
+            >
+              Login
+            </button>
           )}
-          <button
-            onClick={() => navigate("/login")}
-            className="px-8 py-3 bg-gray-800 dark:bg-gray-700 text-white font-semibold rounded-lg shadow-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition w-full sm:w-auto"
-          >
-            Login
-          </button>
         </div>
       </div>
 
