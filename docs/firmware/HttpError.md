@@ -48,5 +48,5 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/include/HttpSuccess.md` for how normal handler responses are wrapped.
-- See `docs/firmware/include/Guard.md` for using `HttpError` inside guards.
+- See `docs/firmware/HttpSuccess.md` for how normal handler responses are wrapped.
+- See `docs/firmware/Guard.md` for using `HttpError` inside guards.

@@ -59,5 +59,5 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/include/Middleware.md` and `docs/firmware/include/Guard.md` for pipeline components executed around handlers.
-- See `docs/firmware/lib/ServerManager.md` for the code that converts the `Router` descriptors into live `AsyncWebServer` routes.
+- See `docs/firmware/Middleware.md` and `docs/firmware/Guard.md` for pipeline components executed around handlers.
+- See `docs/firmware/ServerManager.md` for the code that converts the `Router` descriptors into live `AsyncWebServer` routes.

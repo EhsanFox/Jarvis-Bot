@@ -35,4 +35,4 @@ Troubleshooting
 
 Cross-references
 ----------------
-- See `docs/firmware/lib/FaceManager.md` for how display geometry is used by the face rendering pipeline and where `u8g2` instances are created.
+- See `docs/firmware/FaceManager.md` for how display geometry is used by the face rendering pipeline and where `u8g2` instances are created.

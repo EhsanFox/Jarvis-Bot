@@ -65,8 +65,8 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/lib/TerminalManager.md` for how commands are registered and invoked.
-- Use `docs/firmware/include/DependencyContainer.md` to understand dependency lookups.
+- See `docs/firmware/TerminalManager.md` for how commands are registered and invoked.
+- Use `docs/firmware/DependencyContainer.md` to understand dependency lookups.
 
 Suggestions for improvement
 ---------------------------

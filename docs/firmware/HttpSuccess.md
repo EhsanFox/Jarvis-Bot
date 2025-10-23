@@ -48,4 +48,4 @@ Interop notes
 
 Cross-references
 ----------------
-- See `docs/firmware/include/HttpError.md` for the error envelope used by exception paths.
+- See `docs/firmware/HttpError.md` for the error envelope used by exception paths.

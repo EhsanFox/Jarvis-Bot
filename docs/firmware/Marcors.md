@@ -38,4 +38,4 @@ Drawbacks and alternatives
 
 Cross-references
 ----------------
-- See `docs/firmware/include/Router.md` for the concrete `Router` API these macros wrap.
+- See `docs/firmware/Router.md` for the concrete `Router` API these macros wrap.

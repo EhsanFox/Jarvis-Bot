@@ -49,5 +49,5 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/include/JWTAuth.md` for token format and signature details used by `AuthGuard`.
-- See `docs/firmware/include/HttpError.md` for how throwing `HttpError` translates to HTTP responses.
+- See `docs/firmware/JWTAuth.md` for token format and signature details used by `AuthGuard`.
+- See `docs/firmware/HttpError.md` for how throwing `HttpError` translates to HTTP responses.

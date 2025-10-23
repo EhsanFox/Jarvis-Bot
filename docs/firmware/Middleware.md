@@ -48,5 +48,5 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/include/Marcors.md` for the macros used to attach middleware when creating routers.
-- See `docs/firmware/lib/ServerManager.md` for how middleware is executed for each mounted `Router`.
+- See `docs/firmware/Marcors.md` for the macros used to attach middleware when creating routers.
+- See `docs/firmware/ServerManager.md` for how middleware is executed for each mounted `Router`.

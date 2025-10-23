@@ -55,4 +55,4 @@ Testing
 
 Cross-references
 ----------------
-- See `docs/firmware/include/Guard.md` and `docs/firmware/src/server/guards/AuthGuard.md` for how tokens are consumed at request time.
+- See `docs/firmware/Guard.md` and `docs/firmware/server/guards/AuthGuard.md` for how tokens are consumed at request time.

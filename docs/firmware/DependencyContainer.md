@@ -47,4 +47,4 @@ Alternatives and improvements
 
 Cross-references
 ----------------
-- See `docs/firmware/include/Command.md` and `docs/firmware/include/Router.md` to learn how `use<T>()` is used in handlers.
+- See `docs/firmware/Command.md` and `docs/firmware/Router.md` to learn how `use<T>()` is used in handlers.

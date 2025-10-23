@@ -13,7 +13,7 @@ Target audience
 
 Repository layout (firmware/)
 ----------------------------
-- `include/` — small shared headers and contracts (DI, Router, Middleware, Command, JWT helper, HttpError/Success wrappers). See `docs/firmware/include/` for per-header docs.
+- `include/` — small shared headers and contracts (DI, Router, Middleware, Command, JWT helper, HttpError/Success wrappers). See `docs/firmware/` for per-header docs.
 - `lib/` — modular libraries with clear responsibilities:
   - `ConfigManager/` — persistent JSON config on LittleFS
   - `FaceManager/` — eye drawing, animations, presets and behavior
@@ -21,8 +21,8 @@ Repository layout (firmware/)
   - `TerminalManager/` — serial command lifecycle and command registry
   - `WiFiManager/` — station/AP management and scanning
   - `Utils/` — small helpers (arg splitting, timers)
-  See `docs/firmware/lib/` for detailed pages per library.
-- `scripts/` — PlatformIO extra scripts: `prebuild.py` (hook wiring) and `postbuild.py` (build frontend and prepare LittleFS content). See `docs/firmware/scripts/`.
+  See `docs/firmware/` for detailed pages per library.
+- `scripts/` — PlatformIO extra scripts: `prebuild.py` (hook wiring) and `postbuild.py` (build frontend and prepare LittleFS content). See `docs/firmware/`.
 - `src/` — application wiring:
   - `main.cpp` — constructs services, registers dependencies, mounts routers and starts the server/face loop
   - `commands/` — CLI `Command` instances (info, config, wifi, face)
@@ -105,22 +105,8 @@ Testing strategy
 
 Where to find more detailed docs
 --------------------------------
-- Includes: `docs/firmware/include/` — low-level contracts (Router, Middleware, Command, JWTAuth, HttpError/Success, etc.)
-- Libraries: `docs/firmware/lib/` — deep dives into `ConfigManager`, `FaceManager`, `ServerManager`, `TerminalManager`, `WiFiManager`, and `Utils` with examples and testing tips.
-- Scripts: `docs/firmware/scripts/` — `prebuild.py` and `postbuild.py` expanded docs including PowerShell examples and CI guidance.
-- Source wiring and endpoints: `docs/firmware/src/` — detailed application flow (main.cpp), CLI commands and server route descriptions.
+- Includes: `docs/firmware/` — low-level contracts (Router, Middleware, Command, JWTAuth, HttpError/Success, etc.)
+- Libraries: `docs/firmware/` — deep dives into `ConfigManager`, `FaceManager`, `ServerManager`, `TerminalManager`, `WiFiManager`, and `Utils` with examples and testing tips.
+- Scripts: `docs/firmware/` — `prebuild.py` and `postbuild.py` expanded docs including PowerShell examples and CI guidance.
+- Source wiring and endpoints: `docs/firmware/` — detailed application flow (main.cpp), CLI commands and server route descriptions.
 
-Suggested next improvements (low-risk)
-------------------------------------
-- Add a `README-DEV.md` with a minimal hardware checklist and quick-flash steps for new contributors.
-- Add a small host-based test harness (desktop) to validate `ConfigManager` and `JWTAuth` logic without hardware.
-- Add a `docs/firmware/TOC.md` that links all generated pages for easier navigation.
-
-Contact & contribution notes
-----------------------------
-If you'd like, I can:
-- Commit these documentation files and open a PR with the changes.
-- Generate a `docs/firmware/TOC.md` and update internal links.
-- Create small unit tests for `ConfigManager` and `JWTAuth` to run under a host environment.
-
-If you want any of those, tell me which and I'll run the commits and any test harness needed.
