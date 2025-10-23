@@ -34,9 +34,14 @@ void TerminalManager::processLine(const String& line) {
         args = input.substring(spaceIndex + 1);
     }
 
+    cmdName.toLowerCase();
+    args.toLowerCase();
+
     bool found = false;
     for (Command* cmd : _commands) {
-        if (cmd->getCommand() == cmdName) {
+        String cmdCommand = cmd->getCommand();
+        cmdCommand.toLowerCase();
+        if (cmdCommand == cmdName) {
             cmd->attachDependencies(&_deps);
             String output = cmd->run(args);
             Serial.println(output);
