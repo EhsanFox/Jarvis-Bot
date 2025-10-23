@@ -21,10 +21,9 @@
 
 #include "commands/info.h"
 #include "commands/wifi.h"
+#include "commands/config.h"
+#include "commands/face.h"
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1  // Some boards don’t need this
 #define SDA_PIN 21
 #define SCL_PIN 22
 
@@ -42,15 +41,10 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     Serial.println("Booting...");
-    
-    face = new Face(SCREEN_WIDTH, SCREEN_HEIGHT, /* eyeSize = */ 40);
+
+    face = new Face(config.get("face.width").as<int>() | 128, config.get("face.height").as<int>() | 64, config.get("face.size").as<int>() | 40);
     // Assign the current expression
     face->Expression.GoTo_Normal();
-
-    // Assign a weight to each emotion
-    //face->Behavior.SetEmotion(eEmotions::Normal, 1.0);
-    //face->Behavior.SetEmotion(eEmotions::Angry, 1.0);
-    //face->Behavior.SetEmotion(eEmotions::Sad, 1.0);
 
     // Automatically switch between behaviours (selecting new behaviour randomly based on the weight assigned to each emotion)
     face->RandomBehavior = true;
@@ -62,25 +56,25 @@ void setup() {
     face->Blink.Timer.SetIntervalMillis(4000);
 
     // Setup Wi-Fi manager
-    wifiManager = new WiFiManager( config.get("wifi")["ssid"] | "",
-                                   config.get("wifi")["password"] | "",
-                                   config.get("ap")["name"] | "AI-Bot",
-                                   config.get("ap")["password"] | "" );
+    wifiManager = new WiFiManager( config.get("wifi.ssid").as<String>(),
+                                   config.get("wifi.password").as<String>(),
+                                   config.get("ap.ssid").as<String>(),
+                                   config.get("ap.password").as<String>());
     wifiManager->begin();
 
     // Setup webserver
     webServer = new ServerManager(
-        config.get("server")["port"] | 80
+        config.get("server.port").as<int>() | 80
     );
     
     // TODO: Add Dependencies
-    webServer->addDependency("wifi", &wifiManager);
+    webServer->addDependency("wifi", wifiManager);
     webServer->addDependency("config", &config);
-    webServer->addDependency("face", &face);
+    webServer->addDependency("face", face);
     
-    terminal.addDependency("wifi", &wifiManager);
+    terminal.addDependency("wifi", wifiManager);
     terminal.addDependency("config", &config);
-    terminal.addDependency("face", &face);
+    terminal.addDependency("face", face);
 
     // TODO: Add Middlewares
     webServer->use(new LoggerMiddleware());
@@ -93,14 +87,17 @@ void setup() {
     // Setup Terminal Commands
     terminal.addCommand(infoCommand);
     terminal.addCommand(wifiCommand);
+    terminal.addCommand(configCommand);
+    terminal.addCommand(faceCommand);
 
     wifiManager->setAPStartedCallback([&]() {
         Serial.println("Starting webserver in AP mode...");
         webServer->begin();
     });
 
+    bool isReady = config.get("isReady").as<String>();
     // Try connecting to Wi-Fi from config
-    if (!wifiManager->connectSTA(10000)) {
+    if (!isReady && !wifiManager->connectSTA(10000)) {
         Serial.println("WiFi connect failed, starting AP...");
         wifiManager->startAP();
     } else {

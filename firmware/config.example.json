@@ -5,7 +5,7 @@
     "password": "YourWiFiPassword"
   },
   "ap": {
-    "ssid": "AI-Bot",
+    "ssid": "Jarvis-Bot",
     "password": null
   },
   "server": {
@@ -17,5 +17,11 @@
     "issuer": "jarvis-ai",
     "audience": "jarvis-ai-users",
     "algorithm": "HS256"
-  }
+  },
+  "face": {
+    "size": 40,
+    "height": 64,
+    "width": 128
+  },
+  "hashedPassword": null
 }
