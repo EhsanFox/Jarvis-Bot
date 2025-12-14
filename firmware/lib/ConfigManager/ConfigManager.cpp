@@ -52,6 +52,11 @@ bool ConfigManager::save() {
     file.close();
     return true;
 }
+/*
+JsonVariant ConfigManager::getAll() {
+    return _doc
+}
+*/
 
 // Public get: returns JsonVariant, can be string, object, number, etc.
 JsonVariant ConfigManager::get(const String& key) {
@@ -77,18 +82,119 @@ JsonVariant ConfigManager::get(const String& key) {
 
 // Public set: assign value to key, value can be primitive or JSON object
 bool ConfigManager::set(const String& key, const JsonVariant& value) {
-    _doc[key] = value;
+    // Split key by dots
+    JsonVariant current = _doc;
+    int start = 0;
+
+    while (true) {
+        int dotIndex = key.indexOf('.', start);
+        String part = (dotIndex == -1) ? key.substring(start) : key.substring(start, dotIndex);
+
+        if (part.isEmpty()) return false; // invalid key
+
+        // If this is the last key part, assign the value
+        if (dotIndex == -1) {
+            current[part] = value;
+            break;
+        }
+
+        // Ensure the sub-object exists
+        if (!current[part].is<JsonObject>()) {
+            current[part] = _doc.createNestedObject();
+        }
+
+        // Move deeper into the object
+        current = current[part];
+        start = dotIndex + 1;
+    }
+
     return save();
 }
+
 bool ConfigManager::set(const String& key, const String& value) {
-    _doc[key] = value;
+    // Split key by dots
+    JsonVariant current = _doc;
+    int start = 0;
+
+    while (true) {
+        int dotIndex = key.indexOf('.', start);
+        String part = (dotIndex == -1) ? key.substring(start) : key.substring(start, dotIndex);
+
+        if (part.isEmpty()) return false; // invalid key
+
+        // If this is the last key part, assign the value
+        if (dotIndex == -1) {
+            current[part] = value;
+            break;
+        }
+
+        // Ensure the sub-object exists
+        if (!current[part].is<JsonObject>()) {
+            current[part] = _doc.createNestedObject();
+        }
+
+        // Move deeper into the object
+        current = current[part];
+        start = dotIndex + 1;
+    }
+
     return save();
 }
 bool ConfigManager::set(const String& key, const bool& value) {
-    _doc[key] = value;
+    // Split key by dots
+    JsonVariant current = _doc;
+    int start = 0;
+
+    while (true) {
+        int dotIndex = key.indexOf('.', start);
+        String part = (dotIndex == -1) ? key.substring(start) : key.substring(start, dotIndex);
+
+        if (part.isEmpty()) return false; // invalid key
+
+        // If this is the last key part, assign the value
+        if (dotIndex == -1) {
+            current[part] = value;
+            break;
+        }
+
+        // Ensure the sub-object exists
+        if (!current[part].is<JsonObject>()) {
+            current[part] = _doc.createNestedObject();
+        }
+
+        // Move deeper into the object
+        current = current[part];
+        start = dotIndex + 1;
+    }
+
     return save();
 }
 bool ConfigManager::set(const String& key, const int& value) {
-    _doc[key] = value;
+    // Split key by dots
+    JsonVariant current = _doc;
+    int start = 0;
+
+    while (true) {
+        int dotIndex = key.indexOf('.', start);
+        String part = (dotIndex == -1) ? key.substring(start) : key.substring(start, dotIndex);
+
+        if (part.isEmpty()) return false; // invalid key
+
+        // If this is the last key part, assign the value
+        if (dotIndex == -1) {
+            current[part] = value;
+            break;
+        }
+
+        // Ensure the sub-object exists
+        if (!current[part].is<JsonObject>()) {
+            current[part] = _doc.createNestedObject();
+        }
+
+        // Move deeper into the object
+        current = current[part];
+        start = dotIndex + 1;
+    }
+
     return save();
 }

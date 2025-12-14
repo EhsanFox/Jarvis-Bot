@@ -21,7 +21,11 @@
   "face": {
     "size": 40,
     "height": 64,
-    "width": 128
+    "width": 128,
+    "blinkRateMs": 4000,
+    "sdaPin": 22,
+    "sclPin": 23
   },
-  "hashedPassword": null
+  "hashedPassword": null,
+  "serialPort": 115200
 }
