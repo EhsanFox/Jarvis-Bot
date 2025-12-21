@@ -1,115 +1,136 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
-#include <SoftwareSerial.h>
-#include <DFRobotDFPlayerMini.h>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
-// ONLY these pins are needed for DFPlayer
-#define DFPLAYER_RX_PIN 16  // ESP32 TX → DFPlayer RX
-#define DFPLAYER_TX_PIN 17  // ESP32 RX → DFPlayer TX
+#include "Displays.h"
 
-SoftwareSerial dfplayerSerial(DFPLAYER_RX_PIN, DFPLAYER_TX_PIN);
-DFRobotDFPlayerMini myDFPlayer;
+#include <ConfigManager.h>
+#include <WiFiManager.h>
+#include <ServerManager.h>
+#include <TerminalManager.h>
+#include <FaceManager.h>
+#include <MicManager.h>
 
-void checkSDCard() {
-  Serial.println("\nChecking SD card in DFPlayer...");
-  
-  int fileCount = myDFPlayer.readFileCounts();
-  
-  if (fileCount > 0) {
-    Serial.print("SD card found with ");
-    Serial.print(fileCount);
-    Serial.println(" audio files");
-    
-    // List first few files
-    Serial.println("\nAvailable commands:");
-    Serial.println("p = Play/Pause");
-    Serial.println("s = Stop");
-    Serial.println("+ = Volume up");
-    Serial.println("- = Volume down");
-    Serial.println("1 = Play track 1");
-    Serial.println("2 = Play track 2");
-    Serial.println("... etc");
-  } else {
-    Serial.println("No SD card or no files found!");
-    Serial.println("Format SD card as FAT32");
-    Serial.println("Name files: 001.mp3, 002.mp3, etc.");
-  }
-}
+#include "server/middlewares/logger.h"
+
+#include "server/routes/auth.h" 
+#include "server/routes/status.h"
+#include "server/routes/wifi.h"
+
+#include "commands/info.h"
+#include "commands/wifi.h"
+#include "commands/config.h"
+#include "commands/face.h"
+#include "commands/bash.h"
+#include "commands/mic.h"
+
+#define SDA_PIN 22
+#define SCL_PIN 23
+
+ConfigManager config;
+TerminalManager terminal;
+WiFiManager *wifiManager = nullptr;
+ServerManager *webServer = nullptr;
+MicManager* micManager = nullptr;
+
+// GLOBALS
+Face *face;
 
 void setup() {
-  Serial.begin(115200);
-  dfplayerSerial.begin(9600);
-  
-  Serial.println("Initializing DFPlayer Mini...");
-  Serial.println("(SD card is inside DFPlayer, not connected to ESP32)");
-  
-  delay(2000); // Give DFPlayer time to initialize
-  
-  if (!myDFPlayer.begin(dfplayerSerial)) {
-    Serial.println("Unable to begin DFPlayer!");
-    Serial.println("1. Check connections: RX->16, TX->17");
-    Serial.println("2. Check power (add capacitors!)");
-    Serial.println("3. Check SD card format/contents");
-    while(true);
-  }
-  
-  Serial.println("DFPlayer Mini online!");
-  
-  // Set initial settings
-  myDFPlayer.volume(20);  // 0-30
-  myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
-  
-  // Check if SD card is readable
-  checkSDCard();
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+    Wire.begin(
+        config.get("face.sdaPin").as<int>() | 22,
+        config.get("face.sclPin").as<int>() | 23);
+    Serial.begin(
+        config.get("serialPort").as<int>() | 115200
+    );
+    delay(1000);
+    Serial.println("Booting...");
+
+    face = new Face(
+        config.get("face.width").as<int>() | 128,
+        config.get("face.height").as<int>() | 64,
+        config.get("face.size").as<int>() | 40);
+    // Assign the current expression
+    face->Expression.GoTo_Normal();
+
+    // Automatically switch between behaviours (selecting new behaviour randomly based on the weight assigned to each emotion)
+    face->RandomBehavior = true;
+
+    // Automatically blink
+    face->RandomBlink = true;
+
+    // Set blink rate
+    face->Blink.Timer.SetIntervalMillis(
+        config.get("face.blinkRateMs").as<int>() | 4000
+    );
+
+    // Setup Wi-Fi manager
+    wifiManager = new WiFiManager( config.get("wifi.ssid").as<String>(),
+                                   config.get("wifi.password").as<String>(),
+                                   config.get("ap.ssid").as<String>(),
+                                   config.get("ap.password").as<String>() == "null" ? "" : config.get("ap.password").as<String>());
+    wifiManager->begin();
+
+    // Setup webserver
+    webServer = new ServerManager(
+        config.get("server.port").as<int>() | 80
+    );
+
+    // Create and initialize mic manager
+    micManager = new MicManager(26, 25, 23); // Adjust pins for your board
+    if (!micManager->begin()) {
+        Serial.println("Failed to initialize mic");
+    }
+    
+    // TODO: Add Dependencies
+    webServer->addDependency("wifi", wifiManager);
+    webServer->addDependency("config", &config);
+    webServer->addDependency("face", face);
+    webServer->addDependency("mic", micManager);
+
+    terminal.addDependency("wifi", wifiManager);
+    terminal.addDependency("config", &config);
+    terminal.addDependency("face", face);
+    terminal.addDependency("mic", micManager);
+
+    // TODO: Add Middlewares
+    webServer->use(new LoggerMiddleware());
+    
+    // TODO: Add Routers
+    webServer->addRouter(&authRouter);
+    webServer->addRouter(&statusRouter);
+    webServer->addRouter(&wifiRouter);
+
+    // Setup Terminal Commands
+    terminal.addCommand(infoCommand);
+    terminal.addCommand(wifiCommand);
+    terminal.addCommand(configCommand);
+    terminal.addCommand(faceCommand);
+    terminal.addCommand(bashCommand);
+    terminal.addCommand(micCommand);
+
+    wifiManager->setAPStartedCallback([&]() {
+        Serial.println("Starting webserver in AP mode...");
+        webServer->begin();
+    });
+
+    bool isReady = config.get("isReady").as<bool>();
+    // Try connecting to Wi-Fi from config
+    if (!isReady || !wifiManager->connectSTA(10000)) {
+        Serial.println("WiFi connect failed, starting AP...");
+        wifiManager->startAP();
+    } else {
+        Serial.print("Connected to Wi-Fi. IP: ");
+        Serial.println(wifiManager->ipAddress());
+        webServer->begin(); // start webserver in STA mode
+    }
 }
 
 void loop() {
-  // Simple command handler via Serial Monitor
-  if (Serial.available()) {
-    char cmd = Serial.read();
-    
-    switch(cmd) {
-      case 'p':
-        myDFPlayer.start();
-        Serial.println("Play/Pause");
-        break;
-      case 's':
-        myDFPlayer.stop();
-        Serial.println("Stop");
-        break;
-      case '+':
-        myDFPlayer.volumeUp();
-        Serial.println("Volume +");
-        break;
-      case '-':
-        myDFPlayer.volumeDown();
-        Serial.println("Volume -");
-        break;
-      case '1':
-        myDFPlayer.play(1);
-        Serial.println("Playing track 1");
-        break;
-      case '2':
-        myDFPlayer.play(2);
-        Serial.println("Playing track 2");
-        break;
-      case '3':
-        myDFPlayer.play(3);
-        Serial.println("Playing track 3");
-        break;
-      case '?':
-        Serial.print("Total tracks: ");
-        Serial.println(myDFPlayer.readFileCounts());
-        Serial.print("Current track: ");
-        Serial.println(myDFPlayer.readCurrentFileNumber());
-        break;
-    }
-  }
-  
-  // Optional: Auto-play demo
-  static unsigned long lastPlay = 0;
-  if (millis() - lastPlay > 10000) { // Every 10 seconds
-    lastPlay = millis();
-    myDFPlayer.next();
-    Serial.println("Auto-play: Next track");
-  }
+    terminal.handleInput();
+    face->Update();
 }
